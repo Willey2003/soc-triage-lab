@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC Triage Console</title>
+<style>
+  :root { --bg:#0f1419; --panel:#161d24; --line:#26313b; --fg:#d8dee4; --dim:#8b98a5; --esc:#ff6b5e; --close:#4cc38a; --warn:#f0b33d; --acc:#5ab0ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--fg); }
+  header { display:flex; gap:16px; align-items:baseline; flex-wrap:wrap; padding:14px 18px; border-bottom:1px solid var(--line); }
+  header h1 { font-size:17px; margin:0; }
+  header .meta { color:var(--dim); font-size:13px; }
+  main { display:grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); gap:0; height:calc(100vh - 52px); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; height:auto; } }
+  .list { overflow:auto; border-right:1px solid var(--line); }
+  .filters { display:flex; gap:8px; padding:10px 14px; position:sticky; top:0; background:var(--bg); border-bottom:1px solid var(--line); }
+  button, select { background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:5px 10px; font:inherit; cursor:pointer; }
+  button:hover { border-color:var(--acc); }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap; font-size:13px; }
+  th { color:var(--dim); font-weight:500; }
+  tr.row { cursor:pointer; } tr.row:hover, tr.sel { background:var(--panel); }
+  .pill { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; font-weight:600; }
+  .escalate { background:rgba(255,107,94,.15); color:var(--esc); } .close { background:rgba(76,195,138,.15); color:var(--close); }
+  .ok { color:var(--close); } .bad { color:var(--esc); } .dim { color:var(--dim); }
+  .detail { overflow:auto; padding:16px 18px; }
+  .detail h2 { font-size:15px; margin:0 0 6px; }
+  .kv { display:grid; grid-template-columns: 130px 1fr; gap:4px 10px; margin:10px 0; font-size:13px; }
+  .kv div:nth-child(odd) { color:var(--dim); }
+  pre { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:10px; overflow:auto; font-size:12px; white-space:pre-wrap; word-break:break-all; }
+  ul { margin:4px 0 10px; padding-left:18px; }
+  .warn { color:var(--warn); }
+</style>
+</head>
+<body>
+<header>
+  <h1>SOC Triage Console</h1>
+  <span class="meta" id="meta">loading…</span>
+</header>
+<main>
+  <section class="list">
+    <div class="filters">
+      <select id="filter"><option value="">all</option><option value="escalate">escalated</option><option value="close">closed</option></select>
+      <button id="refresh">Refresh</button>
+      <span class="meta" id="count"></span>
+    </div>
+    <table>
+      <thead><tr><th>time</th><th>rule</th><th>score</th><th>decision</th><th>by</th><th>lab truth</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </section>
+  <section class="detail" id="detail"><p class="dim">Select a case.</p></section>
+</main>
+<script>
+// Alert fields are attacker-controlled: everything is rendered with textContent, never innerHTML.
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+let selected = null;
+
+async function load() {
+  const f = $("filter").value;
+  const [cases, stats] = await Promise.all([
+    fetch("cases?limit=300" + (f ? "&disposition=" + f : "")).then(r => r.json()),
+    fetch("stats").then(r => r.json()),
+  ]);
+  $("meta").textContent = `mode ${stats.mode} · model ${stats.model} · queue ${stats.queue}`;
+  $("count").textContent = `${cases.length} cases`;
+  const body = $("rows"); body.replaceChildren();
+  for (const c of cases) {
+    const tr = el("tr", "row" + (c.id === selected ? " sel" : ""));
+    tr.append(el("td", "dim", new Date(c.created * 1000).toLocaleTimeString()), el("td", "", c.rule), el("td", "", String(c.risk_score)));
+    const d = el("td"); d.append(el("span", "pill " + c.disposition, c.disposition)); tr.append(d);
+    tr.append(el("td", "dim", c.decided_by));
+    const t = c.lab_truth ? c.lab_truth.label : "";
+    const right = t && ((t === "malicious") === (c.disposition === "escalate"));
+    tr.append(el("td", t ? (right ? "ok" : "bad") : "dim", t ? `${t} ${right ? "✓" : "✗"}` : "–"));
+    tr.onclick = () => { selected = c.id; show(c); load(); };
+    body.append(tr);
+  }
+}
+
+function show(c) {
+  const d = c.decision, box = $("detail"); box.replaceChildren();
+  box.append(el("h2", "", `${c.rule} · ${c.id}`));
+  const kv = el("div", "kv");
+  const pairs = [["decision", `${d.disposition} (${d.severity})`], ["decided by", d.decided_by], ["risk score", String(d.risk_score)],
+    ["MITRE", d.mitre_technique || "–"], ["LLM latency", d.llm_latency_s ? d.llm_latency_s.toFixed(1) + " s" : "not consulted"],
+    ["analyst", c.analyst_verdict || "–"]];
+  if (c.lab_truth) pairs.push(["lab truth", `${c.lab_truth.label} / ${c.lab_truth.scenario}`]);
+  for (const [k, v] of pairs) kv.append(el("div", "", k), el("div", "", v));
+  box.append(kv);
+  if (d.injection_fields.length) box.append(el("p", "warn", "Instruction-like text found in: " + d.injection_fields.join(", ")));
+  box.append(el("h2", "", "Reasoning")); box.append(el("p", "", d.reasoning || "–"));
+  if (d.next_steps.length) { const ul = el("ul"); d.next_steps.forEach(s => ul.append(el("li", "", s))); box.append(el("h2", "", "Next steps"), ul); }
+  const ul2 = el("ul"); d.rule_reasons.forEach(s => ul2.append(el("li", "", s))); box.append(el("h2", "", "Rule score"), ul2);
+  const fb = el("p");
+  for (const v of ["true_positive", "false_positive", "benign_true_positive"]) {
+    const b = el("button", "", v.replaceAll("_", " "));
+    b.onclick = async () => { await fetch(`cases/${encodeURIComponent(c.id)}/decision`, {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify({verdict: v})}); load(); };
+    fb.append(b, document.createTextNode(" "));
+  }
+  box.append(el("h2", "", "Analyst feedback"), fb);
+  box.append(el("h2", "", "Alert"), el("pre", "", JSON.stringify(c.alert, null, 2)));
+}
+
+$("refresh").onclick = load; $("filter").onchange = load;
+load(); setInterval(load, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+image:
+  repository: ghcr.io/willey2003/soc-triage   # or load localhost/soc-triage:0.1 into your nodes
+  tag: "0.1"
+  pullPolicy: IfNotPresent
+
+triage:
+  mode: hybrid            # rules | llm | hybrid
+  model: qwen2.5:1.5b
+
+ollama:
+  image: docker.io/ollama/ollama:0.34.4
+  storage: 5Gi
+  resources:
+    requests: {cpu: "2", memory: 3Gi}
+    limits: {cpu: "6", memory: 6Gi}
+
+api:
+  storage: 1Gi
+  service: {type: ClusterIP, port: 8090}
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: "1", memory: 512Mi}
+
+feeder:
+  enabled: true
+  intervalSeconds: 30
+
+storageClassName: ""      # empty = cluster default
+
+networkPolicy:
+  enabled: true           # only the API (and the model-pull Job) may talk to Ollama
+
+serviceMonitor:
+  enabled: false          # needs the Prometheus Operator CRDs

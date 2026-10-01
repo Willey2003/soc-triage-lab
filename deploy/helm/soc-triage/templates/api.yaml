@@ -1,0 +1,71 @@
+{{ include "soc.pvc" (dict "root" . "name" (printf "%s-data" .Release.Name) "size" .Values.api.storage) }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-api
+  labels: {{- include "soc.labels" . | nindent 4 }}
+spec:
+  replicas: 1                      # SQLite case store: one writer
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app.kubernetes.io/name: soc-api, app.kubernetes.io/instance: {{ .Release.Name }}}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: soc-api, app.kubernetes.io/instance: {{ .Release.Name }}}
+      annotations: {prometheus.io/scrape: "true", prometheus.io/port: "8090", prometheus.io/path: /metrics}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001}
+      containers:
+        - name: api
+          image: {{ include "soc.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - {name: OLLAMA_URL, value: "http://{{ .Release.Name }}-ollama:11434"}
+            - {name: SOC_MODEL, value: {{ .Values.triage.model | quote }}}
+            - {name: SOC_MODE, value: {{ .Values.triage.mode | quote }}}
+            - {name: SOC_DB, value: /data/cases.db}
+          ports: [{containerPort: 8090, name: http}]
+          readinessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 10}
+          livenessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 20}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          resources: {{- toYaml .Values.api.resources | nindent 12 }}
+          volumeMounts: [{name: data, mountPath: /data}]
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: {{ .Release.Name }}-data}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+  labels: {{- include "soc.labels" . | nindent 4 }}
+    app.kubernetes.io/name: soc-api
+spec:
+  type: {{ .Values.api.service.type }}
+  selector: {app.kubernetes.io/name: soc-api, app.kubernetes.io/instance: {{ .Release.Name }}}
+  ports: [{port: {{ .Values.api.service.port }}, targetPort: http, name: http}]
+{{- if .Values.feeder.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-feeder
+  labels: {{- include "soc.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: soc-feeder, app.kubernetes.io/instance: {{ .Release.Name }}}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: soc-feeder, app.kubernetes.io/instance: {{ .Release.Name }}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 10001}
+      containers:
+        - name: feeder
+          image: {{ include "soc.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [python, -m, app.feeder]
+          env:
+            - {name: SOC_API, value: "http://{{ .Release.Name }}-api:{{ .Values.api.service.port }}"}
+            - {name: FEED_INTERVAL_S, value: {{ .Values.feeder.intervalSeconds | quote }}}
+          resources: {limits: {cpu: 250m, memory: 128Mi}}
+{{- end }}

@@ -1,0 +1,9 @@
+{
+  "_comment": "Local threat-intel feed for the lab. All indicators are synthetic (documentation IP ranges, invented hashes/domains).",
+  "bad_ips": ["203.0.113.45", "203.0.113.77", "198.51.100.23", "198.51.100.99", "192.0.2.150"],
+  "bad_hashes": {
+    "9f2c4e1ab0d34c6f8e7a5b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e": "QakLoader dropper (synthetic)",
+    "4b1d9e2f7a6c5b3e8d0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d": "Cobalt-style beacon (synthetic)"
+  },
+  "bad_domains": ["x7q-sync.top", "cdn-update-check.xyz"]
+}

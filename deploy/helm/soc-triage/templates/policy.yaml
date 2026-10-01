@@ -1,0 +1,26 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-ollama-ingress
+  labels: {{- include "soc.labels" . | nindent 4 }}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/name: ollama, app.kubernetes.io/instance: {{ .Release.Name }}}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/name: soc-api, app.kubernetes.io/instance: {{ .Release.Name }}}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: model-pull, app.kubernetes.io/instance: {{ .Release.Name }}}}
+      ports: [{port: 11434}]
+{{- end }}
+{{- if .Values.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-api
+  labels: {{- include "soc.labels" . | nindent 4 }}
+spec:
+  selector: {matchLabels: {app.kubernetes.io/name: soc-api}}
+  endpoints: [{port: http, path: /metrics, interval: 15s}]
+{{- end }}

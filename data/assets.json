@@ -1,0 +1,21 @@
+{
+  "_comment": "CMDB extract: host roles, automation hosts, VPN egress, allowlists. Rules see only part of this; the LLM sees all of it.",
+  "hosts": {
+    "WS-FIN-014":  {"role": "workstation", "owner": "a.khan", "criticality": "high"},
+    "WS-FIN-022":  {"role": "workstation", "owner": "j.ortiz", "criticality": "high"},
+    "WS-ENG-101":  {"role": "workstation", "owner": "m.chen", "criticality": "medium"},
+    "WS-HR-007":   {"role": "workstation", "owner": "p.nair", "criticality": "medium"},
+    "SCCM-01":     {"role": "config-management", "automation": true, "criticality": "high"},
+    "BLD-AGENT-3": {"role": "ci-build-agent", "automation": true, "criticality": "medium"},
+    "VULNSCAN-01": {"role": "vulnerability-scanner", "scanner": true, "criticality": "low"},
+    "DC-01":       {"role": "domain-controller", "criticality": "critical"},
+    "FS-02":       {"role": "file-server", "criticality": "high"}
+  },
+  "corporate_cidrs": ["10.20.0.0/16", "10.30.0.0/16"],
+  "vpn_egress": {"185.199.110.10": "Frankfurt VPN concentrator", "185.199.111.20": "Singapore VPN concentrator"},
+  "dns_allowlist": ["telemetry.vendor-cdn.net", "updates.office-cdn.net", "edge.av-telemetry.com"],
+  "signed_internal_hashes": {
+    "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b": "inventory-agent.exe (signed by IT, internal)",
+    "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f": "backup-helper.exe (signed by IT, internal)"
+  }
+}

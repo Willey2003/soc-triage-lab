@@ -1,0 +1,25 @@
+name: ci
+on:
+  push: {branches: [main]}
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check app eval tests scripts
+      - run: pytest -q
+  chart-and-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint deploy/helm/soc-triage && helm template t deploy/helm/soc-triage > /dev/null
+      - run: pip install pyyaml && python scripts/render_pod.py && git diff --exit-code deploy/podman/soc-triage-pod.yaml
+      - run: docker build -f Containerfile -t soc-triage:ci .
+      - run: docker run --rm soc-triage:ci python -m pytest -q

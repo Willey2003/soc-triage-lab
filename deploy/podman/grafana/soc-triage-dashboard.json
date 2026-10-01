@@ -1,0 +1,523 @@
+{
+ "uid": "soc-triage",
+ "title": "SOC triage lab",
+ "schemaVersion": 39,
+ "version": 1,
+ "refresh": "30s",
+ "time": {
+  "from": "now-3h",
+  "to": "now"
+ },
+ "tags": [
+  "soc",
+  "llm"
+ ],
+ "panels": [
+  {
+   "id": 1,
+   "type": "stat",
+   "title": "Alerts ingested (total)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(soc_alerts_ingested_total)",
+     "legendFormat": "",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 2,
+   "type": "stat",
+   "title": "Escalated to analyst",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 4,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(soc_triage_decisions_total{disposition=\"escalate\"})",
+     "legendFormat": "",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "Auto-closed",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(soc_triage_decisions_total{disposition=\"close\"})",
+     "legendFormat": "",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 4,
+   "type": "stat",
+   "title": "Live accuracy vs lab truth",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "(sum(soc_triage_vs_truth_total{outcome=~\"tp|tn\"}) or vector(0)) / clamp_min(sum(soc_triage_vs_truth_total), 1)",
+     "legendFormat": "",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit",
+     "decimals": 1
+    },
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 5,
+   "type": "stat",
+   "title": "Missed malicious (FN)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(soc_triage_vs_truth_total{outcome=~\"fn\"}) or vector(0)",
+     "legendFormat": "",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 6,
+   "type": "stat",
+   "title": "Injection attempts caught",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 20,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(soc_injection_detected_total) or vector(0)",
+     "legendFormat": "",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": []
+   },
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ]
+    },
+    "colorMode": "value",
+    "graphMode": "area"
+   }
+  },
+  {
+   "id": 7,
+   "type": "timeseries",
+   "title": "Decisions per minute by path",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 4,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (decided_by) (rate(soc_triage_decisions_total[5m])) * 60",
+     "legendFormat": "{{decided_by}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "fillOpacity": 15,
+      "lineWidth": 2,
+      "stacking": {
+       "mode": "normal"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "id": 8,
+   "type": "timeseries",
+   "title": "Outcome vs lab truth (per minute)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 4,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (outcome) (rate(soc_triage_vs_truth_total[5m])) * 60",
+     "legendFormat": "{{outcome}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "fillOpacity": 15,
+      "lineWidth": 2,
+      "stacking": {
+       "mode": "normal"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "id": 9,
+   "type": "timeseries",
+   "title": "LLM latency",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 12,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.5, sum by (le) (rate(soc_llm_latency_seconds_bucket[10m])))",
+     "legendFormat": "p50",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(soc_llm_latency_seconds_bucket[10m])))",
+     "legendFormat": "p95",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "custom": {
+      "fillOpacity": 15,
+      "lineWidth": 2,
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "id": 10,
+   "type": "timeseries",
+   "title": "Ingest-to-decision time",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 12,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(soc_triage_time_seconds_bucket[10m])))",
+     "legendFormat": "p95",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "soc_triage_queue_depth",
+     "legendFormat": "queue depth",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "fillOpacity": 15,
+      "lineWidth": 2,
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  },
+  {
+   "id": 11,
+   "type": "timeseries",
+   "title": "Invalid model JSON / analyst feedback",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prom"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 12,
+    "w": 8,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(soc_llm_invalid_json_total) or vector(0)",
+     "legendFormat": "invalid JSON",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "sum by (verdict) (soc_analyst_feedback_total)",
+     "legendFormat": "{{verdict}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prom"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "fillOpacity": 15,
+      "lineWidth": 2,
+      "stacking": {
+       "mode": "none"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "multi"
+    }
+   }
+  }
+ ],
+ "templating": {
+  "list": []
+ },
+ "annotations": {
+  "list": []
+ }
+}

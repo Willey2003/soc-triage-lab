@@ -1,0 +1,9 @@
+{
+  "a.khan":  {"dept": "finance", "home_country": "US", "privileged": false},
+  "j.ortiz": {"dept": "finance", "home_country": "US", "privileged": false},
+  "m.chen":  {"dept": "engineering", "home_country": "US", "privileged": false, "travel": "DE"},
+  "p.nair":  {"dept": "hr", "home_country": "US", "privileged": false},
+  "admin.ops": {"dept": "it", "home_country": "US", "privileged": true},
+  "svc.backup": {"dept": "it", "home_country": "US", "privileged": true, "service_account": true},
+  "r.silva": {"dept": "sales", "home_country": "US", "privileged": false, "travel": "SG"}
+}
